@@ -52,15 +52,17 @@ if ($Machine -eq 'auto') {
     $Machine = if ($hasNvidia) { '4090' } else { '7900xtx' }
     # A 16 GB NVIDIA card next to eight cores or fewer is the measured 4080
     # case (#212): the 4090 settings ask for 12/8/6 threads of 16 cores. The
-    # card memory comes from the display driver's registry entry, since
-    # Win32_VideoController stops counting at 4 GB.
+    # card memory comes from the driver entry of each NVIDIA adapter present
+    # (its DEVPKEY_Device_Driver key), since Win32_VideoController stops
+    # counting at 4 GB, and an entry left by a removed card must not count.
     if ($hasNvidia) {
-        $class = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-        $vram = (Get-ChildItem $class -ErrorAction SilentlyContinue | ForEach-Object {
-            Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
-        } | Where-Object { $_.MatchingDeviceId -match 'ven_10de' } |
-            ForEach-Object { [int64]$_.'HardwareInformation.qwMemorySize' } |
-            Measure-Object -Maximum).Maximum
+        $class = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class'
+        $vram = ($controllers | Where-Object { $_.PNPDeviceID -match 'VEN_10DE' } | ForEach-Object {
+            $driver = (Get-PnpDeviceProperty -InstanceId $_.PNPDeviceID -KeyName DEVPKEY_Device_Driver -ErrorAction SilentlyContinue).Data
+            if ($driver) {
+                [int64](Get-ItemProperty "$class\$driver" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize'
+            }
+        } | Measure-Object -Maximum).Maximum
         $cores = (Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object NumberOfCores -Sum).Sum
         if ($vram -ge 15GB -and $cores -and $cores -le 8) {
             $Machine = '4080'
