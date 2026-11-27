@@ -73,7 +73,7 @@ Use [`Play-VIctory.cmd`](Play-VIctory.cmd) to pass the same options from Command
 | --- | --- |
 | `-Console series-s` | Select the lighter console profile used in the sessions above. |
 | `-Machine 4090` / `-Machine 4070` / `-Machine 7900xtx` | Select a GPU preset explicitly. See the [RTX 4070 test notes](docs/rtx4070-performance.md). |
-| `-Machine 4080` | A 16 GB NVIDIA card with an 8-core CPU (measured on an RTX 4070 Ti SUPER and a Ryzen 7 7700, #212): the 4070 thread counts with larger card memory budgets. `auto` picks it for such a PC. |
+| `-Machine 4080` | A 16 GB NVIDIA card with an 8-core CPU (measured on an RTX 4070 Ti SUPER and a Ryzen 7 7700, #212): the 4070 thread counts with larger card memory budgets. Explicit only. |
 | `-Machine laptop` | Try the [16 GB NVIDIA laptop preset](docs/laptop-16gb.md), measured on one RTX 3050 laptop. |
 | `-Safe` | Launch with the conservative settings when investigating a graphics or stability issue. |
 | `-Windowed` / `-NoPanel` | Start in a window or hide the diagnostics overlay at launch. |

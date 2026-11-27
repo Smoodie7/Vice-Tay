@@ -12,7 +12,7 @@
 # -Dlss4K       NVIDIA DLSS at 3840x2160 (quality, balanced or performance); FSR if it cannot start
 # -Build        target\diag (the default, the build all measurements are of) or target\release
 # -Machine      auto (the default: by the graphics card), 7900xtx, 4070, 4080, 4090 or laptop
-#               (4080: a 16 GB NVIDIA card with an 8-core CPU)
+#               (4080: a 16 GB NVIDIA card with an 8-core CPU; explicit only)
 #               (laptop: an NVIDIA PC with 16 GB of RAM and a 6-8 GB card, docs/laptop-16gb.md)
 # -More         other settings: -More @{VICTORY_PANEL='1'} or -More @{VICTORY_AMBIENT='1.0'}
 # On a smaller NVIDIA PC, compare the same Series S scene after a fresh start
@@ -50,25 +50,6 @@ $hasNvidia = [bool]($controllers.PNPDeviceID -match 'VEN_10DE')
 if ($Machine -eq 'auto') {
     # Use the existing vendor defaults. The 4070 / 7800X3D profile is explicit.
     $Machine = if ($hasNvidia) { '4090' } else { '7900xtx' }
-    # A 16 GB NVIDIA card next to eight cores or fewer is the measured 4080
-    # case (#212): the 4090 settings ask for 12/8/6 threads of 16 cores. The
-    # card memory comes from the driver entry of each NVIDIA adapter present
-    # (its DEVPKEY_Device_Driver key), since Win32_VideoController stops
-    # counting at 4 GB, and an entry left by a removed card must not count.
-    if ($hasNvidia) {
-        $class = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class'
-        $vram = ($controllers | Where-Object { $_.PNPDeviceID -match 'VEN_10DE' } | ForEach-Object {
-            $driver = (Get-PnpDeviceProperty -InstanceId $_.PNPDeviceID -KeyName DEVPKEY_Device_Driver -ErrorAction SilentlyContinue).Data
-            if ($driver) {
-                [int64](Get-ItemProperty "$class\$driver" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize'
-            }
-        } | Measure-Object -Maximum).Maximum
-        $cores = (Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Measure-Object NumberOfCores -Sum).Sum
-        if ($vram -ge 15GB -and $cores -and $cores -le 8) {
-            $Machine = '4080'
-            Write-Host ("A {0:N0} GB NVIDIA card with {1} cores: the 4080 settings (-Machine picks another)." -f ($vram / 1GB), $cores)
-        }
-    }
 }
 if ($Machine -eq '7900xtx') {
     # i9-12900K, RX 7900 XTX, 64 GB: the page-mapping lock was fastest with one
